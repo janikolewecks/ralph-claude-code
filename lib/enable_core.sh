@@ -517,6 +517,15 @@ generate_prompt_md() {
     cat << PROMPTEOF
 # Ralph Development Instructions
 
+## 🚨 FIRST ACTIONS EVERY LOOP (MANDATORY)
+
+Before anything else, do these two reads:
+
+1. \`bash check_status.sh\` — ground truth on how many tasks are still open in fix_plan.md. Do NOT set \`EXIT_SIGNAL: true\` while tasks remain.
+2. \`tail -100 .ralph/iteration_log.md\` — recent loop history. Prevents you from repeating approaches that already failed or were superseded. Your in-memory "what I did last loop" is not reliable after session resets.
+
+---
+
 ## Context
 You are Ralph, an autonomous AI development agent working on the **${project_name}** project.
 
@@ -554,7 +563,22 @@ See AGENT.md for build and run instructions.
 
 ## Status Reporting (CRITICAL)
 
-At the end of your response, ALWAYS include this status block:
+At the end of your response, ALWAYS do BOTH of these:
+
+### 1. Append an entry to \`.ralph/iteration_log.md\`
+
+Pick \`N\` by counting existing \`## Iteration\` entries + 1. Newest at the bottom. Format:
+
+\`\`\`
+## Iteration N — YYYY-MM-DD HH:MM
+**Attempted:** <what was done this loop>
+**Rationale:** <why — what signal pointed here>
+**Result:** <observed outcome, with numbers if available>
+**Outcome:** IMPROVED | NO_IMPROVEMENT | NEEDS_HUMAN_DECISION
+**Next idea:** <what to try next loop>
+\`\`\`
+
+### 2. Include this status block in your response:
 
 \`\`\`
 ---RALPH_STATUS---
@@ -824,6 +848,39 @@ enable_ralph_in_directory() {
         safe_create_file ".gitignore" "$gitignore_content"
     else
         enable_log "WARN" ".gitignore template not found, skipping"
+    fi
+
+    # check_status.sh — pre-flight script (ground truth for open tasks)
+    if [[ -n "$templates_dir" ]] && [[ -f "$templates_dir/check_status.sh" ]]; then
+        local check_status_content
+        check_status_content=$(<"$templates_dir/check_status.sh")
+        safe_create_file "check_status.sh" "$check_status_content"
+        chmod +x "check_status.sh" 2>/dev/null || true
+        enable_log "SUCCESS" "Created check_status.sh"
+    else
+        enable_log "WARN" "check_status.sh template not found, skipping"
+    fi
+
+    # ralph_wrapper.sh — auto-restart wrapper with proactive CB reset
+    if [[ -n "$templates_dir" ]] && [[ -f "$templates_dir/ralph_wrapper.sh" ]]; then
+        local wrapper_content
+        wrapper_content=$(<"$templates_dir/ralph_wrapper.sh")
+        safe_create_file "ralph_wrapper.sh" "$wrapper_content"
+        chmod +x "ralph_wrapper.sh" 2>/dev/null || true
+        enable_log "SUCCESS" "Created ralph_wrapper.sh"
+        enable_log "INFO" "  Usage: bash ralph_wrapper.sh (instead of ralph --monitor)"
+    else
+        enable_log "WARN" "ralph_wrapper.sh template not found, skipping"
+    fi
+
+    # iteration_log.md — per-loop history Ralph reads (tail -100) and appends to
+    if [[ -n "$templates_dir" ]] && [[ -f "$templates_dir/iteration_log.md" ]]; then
+        local iteration_log_content
+        iteration_log_content=$(<"$templates_dir/iteration_log.md")
+        safe_create_file ".ralph/iteration_log.md" "$iteration_log_content"
+        enable_log "SUCCESS" "Created .ralph/iteration_log.md"
+    else
+        enable_log "WARN" "iteration_log.md template not found, skipping"
     fi
 
     # Detect task sources for .ralphrc
