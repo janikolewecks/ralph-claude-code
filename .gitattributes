@@ -8,3 +8,4 @@
 *.template     text eol=lf
 .ralphrc       text eol=lf
 .gitignore     text eol=lf
+bin/*          text eol=lf

@@ -223,6 +223,12 @@ EOF
     # Copy stats script to Ralph home (Issue #21)
     cp "$SCRIPT_DIR/ralph-stats.sh" "$RALPH_HOME/"
 
+    # Copy with-claude-profile helper directly into INSTALL_DIR
+    # (multi-account isolation: see MULTI_ACCOUNT.md)
+    if [ -f "$SCRIPT_DIR/bin/with-claude-profile" ]; then
+        cp "$SCRIPT_DIR/bin/with-claude-profile" "$INSTALL_DIR/with-claude-profile"
+    fi
+
     # Make all commands executable
     chmod +x "$INSTALL_DIR/ralph"
     chmod +x "$INSTALL_DIR/ralph-monitor"
@@ -232,6 +238,7 @@ EOF
     chmod +x "$INSTALL_DIR/ralph-enable"
     chmod +x "$INSTALL_DIR/ralph-enable-ci"
     chmod +x "$INSTALL_DIR/ralph-stats"
+    [ -f "$INSTALL_DIR/with-claude-profile" ] && chmod +x "$INSTALL_DIR/with-claude-profile"
     chmod +x "$RALPH_HOME/ralph_monitor.sh"
     chmod +x "$RALPH_HOME/ralph_import.sh"
     chmod +x "$RALPH_HOME/migrate_to_ralph_folder.sh"

@@ -1,0 +1,85 @@
+#!/bin/bash
+# with-claude-profile — run a command with an isolated Claude OAuth profile.
+#
+# Each profile gets its own ~/.claude-profiles/<name>/ directory containing
+# its own .claude/ subdir and .claude.json file. Everything else (.bashrc,
+# .nvm, .gitconfig, .ralph, etc.) is symlinked from the real $HOME so other
+# tools (npm, git, ralph) keep working as usual.
+#
+# Usage:
+#   with-claude-profile <profile-name> <command> [args...]
+#
+# Examples:
+#   with-claude-profile work claude                  # one-time login
+#   with-claude-profile work bash ralph_wrapper.sh   # daily usage
+#   with-claude-profile private bash ralph_wrapper.sh   # parallel terminal
+#
+# Stop with Ctrl+C as usual.
+
+set -e
+
+if [ "$#" -lt 2 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    cat <<USAGE
+Usage: with-claude-profile <profile-name> <command> [args...]
+
+Run <command> with HOME pointing to an isolated Claude profile. Each
+profile keeps its own OAuth credentials at ~/.claude-profiles/<name>/.claude/.
+
+First time per profile (one login per Claude account):
+  with-claude-profile <name> claude    # /login flow inside
+
+Daily usage:
+  with-claude-profile <name> bash ralph_wrapper.sh
+
+List existing profiles:
+  ls ~/.claude-profiles/
+
+Run different profiles in parallel terminals to use multiple Claude accounts
+on the same machine at the same time.
+USAGE
+    exit 1
+fi
+
+PROFILE="$1"
+shift
+
+# Sanity-check the profile name — used as a directory name.
+if [[ ! "$PROFILE" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    echo "Error: profile name must match [a-zA-Z0-9_-]+ (got: '$PROFILE')" >&2
+    exit 1
+fi
+
+# Capture the real HOME before any nested invocation has overridden it.
+REAL_HOME="${REAL_HOME:-$HOME}"
+PROFILE_HOME="$REAL_HOME/.claude-profiles/$PROFILE"
+
+# Create the profile dir on first use. Idempotent.
+mkdir -p "$PROFILE_HOME"
+
+# Symlink every top-level entry of REAL_HOME into PROFILE_HOME, EXCEPT the
+# two paths that must be isolated per profile:
+#   .claude       — directory with credentials.json, sessions, etc.
+#   .claude.json  — settings file at HOME root
+# Also skip .claude-profiles itself to avoid a recursive link into the
+# profile root.
+for item in $(ls -A "$REAL_HOME" 2>/dev/null); do
+    case "$item" in
+        .claude|.claude.json|.claude-profiles)
+            continue
+            ;;
+    esac
+    target="$PROFILE_HOME/$item"
+    # Refresh dangling links if the source got removed/renamed.
+    if [ -L "$target" ] && [ ! -e "$target" ]; then
+        rm "$target"
+    fi
+    if [ ! -e "$target" ]; then
+        ln -s "$REAL_HOME/$item" "$target" 2>/dev/null || true
+    fi
+done
+
+# Export the override + remember REAL_HOME so nested calls don't lose it.
+export HOME="$PROFILE_HOME"
+export REAL_HOME
+
+exec "$@"
