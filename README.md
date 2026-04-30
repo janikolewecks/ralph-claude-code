@@ -14,6 +14,17 @@ Ralph is an implementation of the Geoffrey Huntley's technique for Claude Code t
 
 **Install once, use everywhere** - Ralph becomes a global command available in any directory.
 
+## What this fork adds (vs. upstream `frankbria/ralph-claude-code`)
+
+This fork carries a small set of team defaults on top of upstream:
+
+- **`FIRST ACTIONS` block in every generated `PROMPT.md`** — Ralph reads `bash check_status.sh` and `tail -100 .ralph/iteration_log.md` at the top of every loop. Prevents wrong `EXIT_SIGNAL: true` and repeated dead ends after session resets.
+- **Mandatory `iteration_log.md`** — every loop appends a structured entry (`Attempted / Rationale / Result / Outcome / Next idea`). Human-readable history without attaching to tmux.
+- **`ralph_wrapper.sh` with proactive circuit-breaker reset** — every restart begins `CLOSED`, no stale state from prior crashes.
+- **Quieter `ralph-enable` wizard** — drops the project-name, max-calls, and "show status?" prompts. Run `ralph-enable` and Enter, done.
+- **`with-claude-profile` helper for multiple Claude accounts** — run several Ralph loops in parallel terminals on the same machine, each authenticated to a different Claude subscription. See [MULTI_ACCOUNT.md](MULTI_ACCOUNT.md).
+- **Hardened line endings** — `.gitattributes` forces LF for shell scripts so Windows clients can't break execution with `$'\r': command not found`.
+
 ## Project Status
 
 **Version**: v0.11.5 - Active Development
