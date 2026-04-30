@@ -342,19 +342,13 @@ phase_task_source_selection() {
 phase_configuration() {
     print_header "Configuration" "Phase 3 of 5"
 
-    # Project name
-    if [[ "$NON_INTERACTIVE" != "true" ]]; then
-        CONFIG_PROJECT_NAME=$(prompt_text "Project name" "$DETECTED_PROJECT_NAME")
-    else
-        CONFIG_PROJECT_NAME="$DETECTED_PROJECT_NAME"
-    fi
+    # Project name — always use auto-detected value (folder name or package
+    # metadata). It's only a label in PROMPT.md / .ralphrc, not functional.
+    CONFIG_PROJECT_NAME="$DETECTED_PROJECT_NAME"
 
-    # API call limit
-    if [[ "$NON_INTERACTIVE" != "true" ]]; then
-        CONFIG_MAX_CALLS=$(prompt_number "Max API calls per hour" "100" "10" "500")
-    else
-        CONFIG_MAX_CALLS=100
-    fi
+    # API call limit — fixed default. Edit .ralphrc afterwards if you need
+    # a different rate limit; the prompt added no value for typical usage.
+    CONFIG_MAX_CALLS=100
 
     # GitHub label (if GitHub selected)
     if echo "$SELECTED_SOURCES" | grep -qw "github"; then
@@ -526,12 +520,8 @@ phase_verification() {
         print_bullet "Start Ralph: ralph --monitor" "4."
         echo ""
 
-        if [[ "$NON_INTERACTIVE" != "true" ]]; then
-            if confirm "Show current status?" "y"; then
-                echo ""
-                ralph --status 2>/dev/null || echo "(ralph --status not available)"
-            fi
-        fi
+        # Skipped: post-setup "Show current status?" prompt — pure noise
+        # right after a fresh enable. Run `ralph --status` manually if needed.
     else
         print_error "Some files were not created. Please check the errors above."
         exit $ENABLE_ERROR
