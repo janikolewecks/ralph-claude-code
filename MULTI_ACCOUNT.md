@@ -96,6 +96,24 @@ elsewhere.
 
 ---
 
+## Per-profile tmux server
+
+The wrapper sets `TMUX_TMPDIR=$PROFILE_HOME/.tmux` so each profile uses its
+own tmux socket and therefore its own tmux server. Without this, the first
+profile to run a tmux session would lock the user-global tmux server's
+environment to its `HOME`, and any later session under a different profile
+would silently inherit the first profile's `HOME` for shells spawned inside
+— a classic tmux server-env leak.
+
+The practical consequence: two profiles can run `ralph --monitor` in
+parallel terminals without conflict. To list/attach to a profile's tmux
+sessions you need to be inside that profile's wrapper, e.g.
+
+```bash
+with-claude-profile work tmux ls
+with-claude-profile work tmux attach
+```
+
 ## Caveats
 
 - **Don't run two Ralph loops with the same profile in parallel.** They

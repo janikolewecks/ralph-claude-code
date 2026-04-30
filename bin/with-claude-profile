@@ -82,4 +82,16 @@ done
 export HOME="$PROFILE_HOME"
 export REAL_HOME
 
+# Force per-profile tmux server. The default tmux server is user-global,
+# so the FIRST tmux invocation under any profile would lock the server's
+# environment to that profile's HOME — and every later session opened by
+# a DIFFERENT profile would inherit the first profile's HOME for shells
+# spawned inside (a classic tmux server-env leak).
+#
+# Setting TMUX_TMPDIR per profile gives each profile its own socket and
+# therefore its own server, so two profiles can run parallel tmux sessions
+# (e.g. "ralph --monitor") without stepping on each other.
+export TMUX_TMPDIR="$PROFILE_HOME/.tmux"
+mkdir -p "$TMUX_TMPDIR"
+
 exec "$@"
