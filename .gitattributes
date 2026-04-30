@@ -1,1 +1,10 @@
 .github/workflows/*.lock.yml linguist-generated=true merge=ours
+
+# Force LF line endings for files that are executed/parsed on Linux/WSL.
+# Without this, Windows clients (Git for Windows, UNC-path edits) can
+# silently introduce CRLF and break shell execution with $'\r' errors.
+*.sh           text eol=lf
+*.md           text eol=lf
+*.template     text eol=lf
+.ralphrc       text eol=lf
+.gitignore     text eol=lf
